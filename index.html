@@ -11,6 +11,14 @@
     body { font-family: 'Prompt', sans-serif; background-color: #f8fafc; }
     .shake { animation: shake 0.3s infinite alternate; }
     @keyframes shake { 0% { transform: rotate(-1deg); } 100% { transform: rotate(1deg); } }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* สไตล์ช่องเดิมขณะลากย้าย (ให้จางลงเพื่อให้เห็นช่องว่างชัดเจน) */
+    .dragging-card {
+      opacity: 0.25 !important;
+      border: 2px dashed #cbd5e1 !important;
+    }
   </style>
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col justify-between">
@@ -24,11 +32,11 @@
         <img src="https://reg.eng.chula.ac.th/reg/wp-content/uploads/2018/05/cropped-cu-eng-logo.png" alt="Chula Engineering Logo" class="h-10 sm:h-12 w-auto object-contain">
       </div>
 
-      <!-- Action Buttons (+ / -) -->
+      <!-- Action Buttons (+ / - / Edit Order) -->
       <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
         <button onclick="toggleDeleteMode()" id="deleteToggleBtn" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-300 transition flex items-center gap-1.5">
-          <i class="fa-solid fa-minus"></i>
-          <span id="deleteBtnText">โหมดลบเว็บ</span>
+          <i class="fa-solid fa-pen-to-square"></i>
+          <span id="deleteBtnText">จัดการเว็บ / จัดลำดับ</span>
         </button>
 
         <button onclick="openModal()" class="px-4 py-2 rounded-xl bg-rose-900 hover:bg-rose-950 text-white text-xs font-bold shadow transition flex items-center gap-1.5">
@@ -47,35 +55,53 @@
       <span>คำเตือน: เบราว์เซอร์ของคุณบล็อกการบันทึกข้อมูลถาวร (LocalStorage) กรุณาออกจากโหมดส่วนตัว (Incognito)</span>
     </div>
 
-    <!-- Search Bar -->
-    <div class="relative">
-      <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-      <input type="text" id="searchInput" oninput="renderShortcuts()" placeholder="ค้นหาทางลัดเว็บไซต์..." 
-             class="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-800 text-sm transition">
+    <!-- Search Bar & View Toggle Button Container -->
+    <div class="flex items-center gap-2">
+      <div class="relative flex-grow">
+        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input type="text" id="searchInput" oninput="renderShortcuts()" placeholder="ค้นหาทางลัดเว็บไซต์..." 
+               class="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-800 text-sm transition">
+      </div>
+
+      <button onclick="toggleViewMode()" id="viewToggleBtn" title="สลับการแสดงผลข้อความปุ่มหมวดหมู่" 
+              class="px-4 py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl shadow-sm hover:bg-slate-50 transition flex items-center gap-1.5 text-xs font-medium whitespace-nowrap">
+        <i class="fa-solid fa-text-slash text-sm"></i>
+        <span class="hidden sm:inline" id="viewToggleText">ซ่อนข้อความ</span>
+      </button>
     </div>
 
-    <!-- Multi-Select Category Filter Buttons -->
-    <div class="flex flex-wrap justify-center gap-2" id="categoryFilterContainer">
-      <button data-cat="all" onclick="toggleCategory('all')" class="cat-btn bg-slate-800 text-white px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:opacity-90">
-        🌟 ทั้งหมด
+    <!-- Category Slider Container -->
+    <div class="relative flex items-center">
+      <button id="scrollLeftBtn" onclick="slideCategories(-200)" class="absolute left-0 z-10 bg-white/95 hover:bg-white text-slate-700 shadow-md border border-slate-200 w-8 h-8 rounded-full flex items-center justify-center -ml-3 transition hidden">
+        <i class="fa-solid fa-chevron-left text-xs"></i>
       </button>
-      <button data-cat="fa-graduation-cap" onclick="toggleCategory('fa-graduation-cap')" class="cat-btn bg-white text-slate-600 border border-slate-200 px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50">
-        🎓 การเรียน / มหาวิทยาลัย
-      </button>
-      <button data-cat="fa-book" onclick="toggleCategory('fa-book')" class="cat-btn bg-white text-slate-600 border border-slate-200 px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50">
-        📚 หนังสือ / ห้องสมุด
-      </button>
-      <button data-cat="fa-envelope" onclick="toggleCategory('fa-envelope')" class="cat-btn bg-white text-slate-600 border border-slate-200 px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50">
-        📧 อีเมล / ติดต่อ
-      </button>
-      <button data-cat="fa-laptop-code" onclick="toggleCategory('fa-laptop-code')" class="cat-btn bg-white text-slate-600 border border-slate-200 px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50">
-        💻 ระบบการเรียนออนไลน์
-      </button>
-      <button data-cat="fa-globe" onclick="toggleCategory('fa-globe')" class="cat-btn bg-white text-slate-600 border border-slate-200 px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50">
-        🌐 เว็บทั่วไป
-      </button>
-      <button data-cat="fa-gamepad" onclick="toggleCategory('fa-gamepad')" class="cat-btn bg-white text-slate-600 border border-slate-200 px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50">
-        🎮 เว็บเกม
+
+      <div id="categorySlider" onscroll="checkScrollPosition()" class="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 px-2 w-full scroll-smooth">
+        <button data-cat="all" onclick="toggleCategory('all')" class="cat-btn flex-shrink-0 bg-slate-800 text-white px-4 py-2 rounded-full text-xs font-medium transition shadow-sm hover:opacity-95 flex items-center gap-1.5">
+          <span>🌟</span> <span class="cat-label">ทั้งหมด</span>
+        </button>
+        <button data-cat="fa-graduation-cap" onclick="toggleCategory('fa-graduation-cap')" class="cat-btn flex-shrink-0 bg-white text-slate-600 border border-slate-200 px-4 py-2 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50 flex items-center gap-1.5">
+          <span>🎓</span> <span class="cat-label">เว็บมหาลัย</span>
+        </button>
+        <button data-cat="fa-book" onclick="toggleCategory('fa-book')" class="cat-btn flex-shrink-0 bg-white text-slate-600 border border-slate-200 px-4 py-2 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50 flex items-center gap-1.5">
+          <span>📚</span> <span class="cat-label">หนังสือ / ห้องสมุด</span>
+        </button>
+        <button data-cat="fa-envelope" onclick="toggleCategory('fa-envelope')" class="cat-btn flex-shrink-0 bg-white text-slate-600 border border-slate-200 px-4 py-2 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50 flex items-center gap-1.5">
+          <span>✉️</span> <span class="cat-label">อีเมล / ติดต่อ</span>
+        </button>
+        <button data-cat="fa-laptop-code" onclick="toggleCategory('fa-laptop-code')" class="cat-btn flex-shrink-0 bg-white text-slate-600 border border-slate-200 px-4 py-2 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50 flex items-center gap-1.5">
+          <span>💻</span> <span class="cat-label">ระบบการเรียน</span>
+        </button>
+        <button data-cat="fa-globe" onclick="toggleCategory('fa-globe')" class="cat-btn flex-shrink-0 bg-white text-slate-600 border border-slate-200 px-4 py-2 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50 flex items-center gap-1.5">
+          <span>🌐</span> <span class="cat-label">เว็บทั่วไป</span>
+        </button>
+        <button data-cat="fa-gamepad" onclick="toggleCategory('fa-gamepad')" class="cat-btn flex-shrink-0 bg-white text-slate-600 border border-slate-200 px-4 py-2 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50 flex items-center gap-1.5">
+          <span>🎮</span> <span class="cat-label">เว็บเกม</span>
+        </button>
+      </div>
+
+      <button id="scrollRightBtn" onclick="slideCategories(200)" class="absolute right-0 z-10 bg-white/95 hover:bg-white text-slate-700 shadow-md border border-slate-200 w-8 h-8 rounded-full flex items-center justify-center -mr-3 transition">
+        <i class="fa-solid fa-chevron-right text-xs"></i>
       </button>
     </div>
 
@@ -110,10 +136,10 @@
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">เลือกไอคอน</label>
           <select id="shortcutIcon" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-800 bg-white">
-            <option value="fa-graduation-cap">🎓 การเรียน / มหาวิทยาลัย</option>
+            <option value="fa-graduation-cap">🎓 เว็บมหาลัย</option>
             <option value="fa-book">📚 หนังสือ / ห้องสมุด</option>
             <option value="fa-envelope">✉️ อีเมล / ติดต่อ</option>
-            <option value="fa-laptop-code">💻 ระบบการเรียนออนไลน์</option>
+            <option value="fa-laptop-code">💻 ระบบการเรียน</option>
             <option value="fa-globe">🌐 เว็บทั่วไป</option>
             <option value="fa-gamepad">🎮 เว็บเกม</option>
           </select>
@@ -135,32 +161,77 @@
       { id: '1', name: 'Reg Chula', url: 'https://www.reg.chula.ac.th', icon: 'fa-graduation-cap' },
       { id: '2', name: 'myCourseVille', url: 'https://www.mycourseville.com', icon: 'fa-laptop-code' },
       { id: '3', name: 'Office 365', url: 'https://www.office.com', icon: 'fa-envelope' },
-      { id: '4', name: 'Chula Library', url: 'https://www.car.chula.ac.th', icon: 'fa-book' }
+      { id: '4', name: 'GPA Calculator', url: 'https://sites.google.com/view/thunyach3t-intania-gpa', icon: 'fa-globe' }
     ];
 
     let shortcuts = [];
     let isDeleteMode = false;
-    
-    // ใช้ Set ในการเก็บหลายหมวดหมู่พร้อมกัน
     let selectedCategories = new Set(['all']);
+    let isIconOnly = false;
+    let draggedId = null;
+
+    function checkScrollPosition() {
+      const slider = document.getElementById('categorySlider');
+      const leftBtn = document.getElementById('scrollLeftBtn');
+      const rightBtn = document.getElementById('scrollRightBtn');
+
+      if (!slider) return;
+
+      if (slider.scrollLeft > 5) {
+        leftBtn.classList.remove('hidden');
+      } else {
+        leftBtn.classList.add('hidden');
+      }
+
+      const maxScrollLeft = slider.scrollWidth - slider.clientWidth - 5;
+      if (slider.scrollLeft < maxScrollLeft) {
+        rightBtn.classList.remove('hidden');
+      } else {
+        rightBtn.classList.add('hidden');
+      }
+    }
+
+    function slideCategories(offset) {
+      const slider = document.getElementById('categorySlider');
+      slider.scrollBy({ left: offset, behavior: 'smooth' });
+    }
+
+    function toggleViewMode() {
+      isIconOnly = !isIconOnly;
+      const labels = document.querySelectorAll('.cat-label');
+      const toggleText = document.getElementById('viewToggleText');
+      const toggleBtnIcon = document.querySelector('#viewToggleBtn i');
+
+      labels.forEach(lbl => {
+        if (isIconOnly) {
+          lbl.classList.add('hidden');
+        } else {
+          lbl.classList.remove('hidden');
+        }
+      });
+
+      if (isIconOnly) {
+        toggleText.innerText = 'แสดงข้อความ';
+        toggleBtnIcon.className = 'fa-solid fa-text-height text-sm';
+      } else {
+        toggleText.innerText = 'ซ่อนข้อความ';
+        toggleBtnIcon.className = 'fa-solid fa-text-slash text-sm';
+      }
+
+      setTimeout(checkScrollPosition, 100);
+    }
 
     function toggleCategory(category) {
       if (category === 'all') {
-        // ถ้าคลิก "ทั้งหมด" ให้ล้างหมวดหมู่อื่นๆ แล้วเลือกแค่ 'all'
         selectedCategories.clear();
         selectedCategories.add('all');
       } else {
-        // ถ้าเลือกหมวดหมู่อื่น ให้เอานำ 'all' ออก
         selectedCategories.delete('all');
-
-        // สลับสถานะ (ถ้ามีแล้วให้ลบออก ถ้ายังไม่มีให้เพิ่มเข้าไป)
         if (selectedCategories.has(category)) {
           selectedCategories.delete(category);
         } else {
           selectedCategories.add(category);
         }
-
-        // ถ้าผู้ใช้ยกเลิกทุกปุ่มจนไม่มีอะไรเลย ให้เด้งกลับไปเลือก 'all'
         if (selectedCategories.size === 0) {
           selectedCategories.add('all');
         }
@@ -175,11 +246,9 @@
       buttons.forEach(btn => {
         const cat = btn.getAttribute('data-cat');
         if (selectedCategories.has(cat)) {
-          // สไตล์สำหรับปุ่มที่ถูกเลือก (Active)
-          btn.className = 'cat-btn bg-slate-800 text-white px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:opacity-90';
+          btn.className = 'cat-btn flex-shrink-0 bg-slate-800 text-white px-4 py-2 rounded-full text-xs font-medium transition shadow-sm hover:opacity-95 flex items-center gap-1.5';
         } else {
-          // สไตล์สำหรับปุ่มที่ไม่ได้เลือก (Inactive)
-          btn.className = 'cat-btn bg-white text-slate-600 border border-slate-200 px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50';
+          btn.className = 'cat-btn flex-shrink-0 bg-white text-slate-600 border border-slate-200 px-4 py-2 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50 flex items-center gap-1.5';
         }
       });
     }
@@ -199,6 +268,7 @@
         shortcuts = defaultPresets;
       }
       renderShortcuts();
+      setTimeout(checkScrollPosition, 100);
     }
 
     function saveToLocalStorage() {
@@ -216,7 +286,6 @@
       
       const filtered = shortcuts.filter(s => {
         const matchesSearch = s.name.toLowerCase().includes(search);
-        // เช็กว่าเลือก 'all' อยู่ หรือไอคอนตรงกับหนึ่งในหมวดหมู่ที่ถูกเลือกไว้หรือไม่
         const matchesCategory = selectedCategories.has('all') || selectedCategories.has(s.icon);
         return matchesSearch && matchesCategory;
       });
@@ -231,15 +300,26 @@
       }
 
       grid.innerHTML = filtered.map(s => `
-        <div class="relative group bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col items-center text-center ${isDeleteMode ? 'shake' : ''}">
+        <div class="relative group bg-white p-4 rounded-2xl border border-slate-200 shadow-sm transition flex flex-col items-center text-center ${isDeleteMode ? 'shake cursor-grab active:cursor-grabbing select-none' : 'hover:shadow-md'}"
+             draggable="${isDeleteMode ? 'true' : 'false'}"
+             ondragstart="${isDeleteMode ? `onDragStart(event, '${s.id}')` : 'return false;'}"
+             ondragend="onDragEnd(event)"
+             ondragover="${isDeleteMode ? 'onDragOver(event)' : ''}"
+             ondrop="${isDeleteMode ? `onDrop(event, '${s.id}')` : ''}">
           
           ${isDeleteMode ? `
             <button onclick="deleteShortcut('${s.id}')" class="absolute -top-2 -right-2 bg-rose-600 text-white w-7 h-7 rounded-full shadow-md hover:bg-rose-700 transition flex items-center justify-center z-10">
               <i class="fa-solid fa-xmark text-xs"></i>
             </button>
+            <div class="absolute top-2 left-2 text-slate-300 text-xs">
+              <i class="fa-solid fa-grip-dots-vertical"></i>
+            </div>
           ` : ''}
 
-          <a href="${s.url}" target="_blank" class="w-full flex flex-col items-center">
+          <a href="${s.url}" target="${isDeleteMode ? '_self' : '_blank'}" 
+             onclick="${isDeleteMode ? 'event.preventDefault();' : ''}" 
+             ondragstart="if(!isDeleteMode) event.preventDefault();" 
+             class="w-full flex flex-col items-center pointer-events-none sm:pointer-events-auto">
             <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-900 flex items-center justify-center text-xl mb-2 group-hover:scale-110 transition">
               <i class="fa-solid ${s.icon}"></i>
             </div>
@@ -247,6 +327,50 @@
           </a>
         </div>
       `).join('');
+    }
+
+    // --- ปรับปรุงระบบ Drag & Drop ให้เนียนไม่เบี้ยว ---
+    function onDragStart(e, id) {
+      if (!isDeleteMode) {
+        e.preventDefault();
+        return;
+      }
+      draggedId = id;
+      e.dataTransfer.effectAllowed = 'move';
+      
+      // ให้สไตล์จางลงใส่เฉพาะหลังเบราว์เซอร์จับภาพการ์ดพรีวิวเสร็จแล้ว
+      const target = e.currentTarget;
+      setTimeout(() => {
+        target.classList.add('dragging-card');
+      }, 0);
+    }
+
+    function onDragEnd(e) {
+      e.currentTarget.classList.remove('dragging-card');
+      draggedId = null;
+    }
+
+    function onDragOver(e) {
+      if (!isDeleteMode) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    }
+
+    function onDrop(e, targetId) {
+      if (!isDeleteMode) return;
+      e.preventDefault();
+      if (draggedId === targetId) return;
+
+      const oldIndex = shortcuts.findIndex(s => s.id === draggedId);
+      const newIndex = shortcuts.findIndex(s => s.id === targetId);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const movedItem = shortcuts.splice(oldIndex, 1)[0];
+        shortcuts.splice(newIndex, 0, movedItem);
+
+        saveToLocalStorage();
+        renderShortcuts();
+      }
     }
 
     function addShortcut(e) {
@@ -273,12 +397,14 @@
 
       document.getElementById('shortcutName').value = '';
       document.getElementById('shortcutUrl').value = '';
+      setTimeout(checkScrollPosition, 100);
     }
 
     function deleteShortcut(id) {
       shortcuts = shortcuts.filter(s => s.id !== id);
       saveToLocalStorage(); 
       renderShortcuts();
+      setTimeout(checkScrollPosition, 100);
     }
 
     function toggleDeleteMode() {
@@ -287,10 +413,10 @@
       const toggleBtn = document.getElementById('deleteToggleBtn');
 
       if (isDeleteMode) {
-        btnText.innerText = 'เสร็จสิ้น';
+        btnText.innerText = 'เสร็จสิ้น (บันทึก)';
         toggleBtn.className = 'px-3 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold shadow transition flex items-center gap-1.5';
       } else {
-        btnText.innerText = 'โหมดลบเว็บ';
+        btnText.innerText = 'จัดลำดับ / ลบทางลัด';
         toggleBtn.className = 'px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-300 transition flex items-center gap-1.5';
       }
       renderShortcuts();
@@ -300,6 +426,7 @@
     function closeModal() { document.getElementById('addModal').classList.add('hidden'); }
 
     loadShortcuts();
+    window.addEventListener('resize', checkScrollPosition);
   </script>
 </body>
 </html>
