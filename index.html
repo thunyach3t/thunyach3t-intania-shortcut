@@ -32,11 +32,17 @@
         <img src="https://reg.eng.chula.ac.th/reg/wp-content/uploads/2018/05/cropped-cu-eng-logo.png" alt="Chula Engineering Logo" class="h-10 sm:h-12 w-auto object-contain">
       </div>
 
-      <!-- Action Buttons (+ / - / Edit Order) -->
-      <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+        <!-- ปุ่มรีเซ็ตค่าเริ่มต้น -->
+        <button onclick="openResetModal()" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-300 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-rotate-left"></i>
+          <span>รีเซ็ตค่าเริ่มต้น</span>
+        </button>
+
         <button onclick="toggleDeleteMode()" id="deleteToggleBtn" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-300 transition flex items-center gap-1.5">
           <i class="fa-solid fa-pen-to-square"></i>
-          <span id="deleteBtnText">จัดการเว็บ / จัดลำดับ</span>
+          <span id="deleteBtnText">จัดลำดับ / ลบทางลัด</span>
         </button>
 
         <button onclick="openModal()" class="px-4 py-2 rounded-xl bg-rose-900 hover:bg-rose-950 text-white text-xs font-bold shadow transition flex items-center gap-1.5">
@@ -152,6 +158,30 @@
     </div>
   </div>
 
+  <!-- Reset Confirmation Modal -->
+  <div id="resetModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl relative space-y-4 text-center">
+      <div class="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xl mx-auto">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div class="space-y-1">
+        <h3 class="font-bold text-slate-800 text-base">ยืนยันรีเซ็ตค่าเริ่มต้น?</h3>
+        <p class="text-xs text-slate-500">ทางลัดทั้งหมดจะถูกรีเซ็ตกลับเป็นค่าเริ่มต้น 4 อันแรก</p>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <!-- ปุ่มยกเลิกเด่นกว่า (สีทึบ) -->
+        <button onclick="closeResetModal()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-xl transition text-xs shadow">
+          ยกเลิก
+        </button>
+        <!-- ปุ่มยืนยันรีเซ็ต -->
+        <button onclick="confirmReset()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-rose-700 font-semibold border border-slate-300 rounded-xl transition text-xs">
+          ยืนยันรีเซ็ต
+        </button>
+      </div>
+    </div>
+  </div>
+
   <footer class="text-center py-4 text-xs text-slate-400 border-t bg-white mt-8">
     Intania Shortcut Hub &copy; คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย
   </footer>
@@ -259,13 +289,13 @@
         if (savedData !== null) {
           shortcuts = JSON.parse(savedData);
         } else {
-          shortcuts = defaultPresets;
+          shortcuts = [...defaultPresets];
           saveToLocalStorage();
         }
       } catch (e) {
         console.warn('LocalStorage error:', e);
         document.getElementById('storageWarning').classList.remove('hidden');
-        shortcuts = defaultPresets;
+        shortcuts = [...defaultPresets];
       }
       renderShortcuts();
       setTimeout(checkScrollPosition, 100);
@@ -305,10 +335,11 @@
              ondragstart="${isDeleteMode ? `onDragStart(event, '${s.id}')` : 'return false;'}"
              ondragend="onDragEnd(event)"
              ondragover="${isDeleteMode ? 'onDragOver(event)' : ''}"
-             ondrop="${isDeleteMode ? `onDrop(event, '${s.id}')` : ''}">
+             ondrop="${isDeleteMode ? `onDrop(event, '${s.id}')` : ''}"
+             onclick="${isDeleteMode ? 'event.preventDefault();' : `window.open('${s.url}', '_blank');`}">
           
           ${isDeleteMode ? `
-            <button onclick="deleteShortcut('${s.id}')" class="absolute -top-2 -right-2 bg-rose-600 text-white w-7 h-7 rounded-full shadow-md hover:bg-rose-700 transition flex items-center justify-center z-10">
+            <button onclick="event.stopPropagation(); deleteShortcut('${s.id}')" class="absolute -top-2 -right-2 bg-rose-600 text-white w-7 h-7 rounded-full shadow-md hover:bg-rose-700 transition flex items-center justify-center z-10">
               <i class="fa-solid fa-xmark text-xs"></i>
             </button>
             <div class="absolute top-2 left-2 text-slate-300 text-xs">
@@ -316,20 +347,17 @@
             </div>
           ` : ''}
 
-          <a href="${s.url}" target="${isDeleteMode ? '_self' : '_blank'}" 
-             onclick="${isDeleteMode ? 'event.preventDefault();' : ''}" 
-             ondragstart="if(!isDeleteMode) event.preventDefault();" 
-             class="w-full flex flex-col items-center pointer-events-none sm:pointer-events-auto">
+          <div class="w-full flex flex-col items-center pointer-events-none">
             <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-900 flex items-center justify-center text-xl mb-2 group-hover:scale-110 transition">
               <i class="fa-solid ${s.icon}"></i>
             </div>
             <span class="font-semibold text-xs text-slate-700 truncate w-full">${s.name}</span>
-          </a>
+          </div>
         </div>
       `).join('');
     }
 
-    // --- ปรับปรุงระบบ Drag & Drop ให้เนียนไม่เบี้ยว ---
+    // --- ระบบ Drag & Drop เต็มพื้นที่การ์ด ---
     function onDragStart(e, id) {
       if (!isDeleteMode) {
         e.preventDefault();
@@ -338,7 +366,6 @@
       draggedId = id;
       e.dataTransfer.effectAllowed = 'move';
       
-      // ให้สไตล์จางลงใส่เฉพาะหลังเบราว์เซอร์จับภาพการ์ดพรีวิวเสร็จแล้ว
       const target = e.currentTarget;
       setTimeout(() => {
         target.classList.add('dragging-card');
@@ -404,6 +431,21 @@
       shortcuts = shortcuts.filter(s => s.id !== id);
       saveToLocalStorage(); 
       renderShortcuts();
+      setTimeout(checkScrollPosition, 100);
+    }
+
+    // ฟังก์ชันจัดการปุ่มรีเซ็ต
+    function openResetModal() {
+      document.getElementById('resetModal').classList.remove('hidden');
+    }
+    function closeResetModal() {
+      document.getElementById('resetModal').classList.add('hidden');
+    }
+    function confirmReset() {
+      shortcuts = [...defaultPresets];
+      saveToLocalStorage();
+      renderShortcuts();
+      closeResetModal();
       setTimeout(checkScrollPosition, 100);
     }
 
