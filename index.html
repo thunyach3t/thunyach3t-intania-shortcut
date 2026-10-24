@@ -54,6 +54,31 @@
              class="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-800 text-sm transition">
     </div>
 
+    <!-- Multi-Select Category Filter Buttons -->
+    <div class="flex flex-wrap justify-center gap-2" id="categoryFilterContainer">
+      <button data-cat="all" onclick="toggleCategory('all')" class="cat-btn bg-slate-800 text-white px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:opacity-90">
+        🌟 ทั้งหมด
+      </button>
+      <button data-cat="fa-graduation-cap" onclick="toggleCategory('fa-graduation-cap')" class="cat-btn bg-white text-slate-600 border border-slate-200 px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50">
+        🎓 การเรียน / มหาวิทยาลัย
+      </button>
+      <button data-cat="fa-book" onclick="toggleCategory('fa-book')" class="cat-btn bg-white text-slate-600 border border-slate-200 px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50">
+        📚 หนังสือ / ห้องสมุด
+      </button>
+      <button data-cat="fa-envelope" onclick="toggleCategory('fa-envelope')" class="cat-btn bg-white text-slate-600 border border-slate-200 px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50">
+        📧 อีเมล / ติดต่อ
+      </button>
+      <button data-cat="fa-laptop-code" onclick="toggleCategory('fa-laptop-code')" class="cat-btn bg-white text-slate-600 border border-slate-200 px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50">
+        💻 ระบบการเรียนออนไลน์
+      </button>
+      <button data-cat="fa-globe" onclick="toggleCategory('fa-globe')" class="cat-btn bg-white text-slate-600 border border-slate-200 px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50">
+        🌐 เว็บทั่วไป
+      </button>
+      <button data-cat="fa-gamepad" onclick="toggleCategory('fa-gamepad')" class="cat-btn bg-white text-slate-600 border border-slate-200 px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50">
+        🎮 เว็บเกม
+      </button>
+    </div>
+
     <!-- Shortcuts Grid -->
     <div id="shortcutsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
       <!-- Shortcuts will be rendered here -->
@@ -115,6 +140,49 @@
 
     let shortcuts = [];
     let isDeleteMode = false;
+    
+    // ใช้ Set ในการเก็บหลายหมวดหมู่พร้อมกัน
+    let selectedCategories = new Set(['all']);
+
+    function toggleCategory(category) {
+      if (category === 'all') {
+        // ถ้าคลิก "ทั้งหมด" ให้ล้างหมวดหมู่อื่นๆ แล้วเลือกแค่ 'all'
+        selectedCategories.clear();
+        selectedCategories.add('all');
+      } else {
+        // ถ้าเลือกหมวดหมู่อื่น ให้เอานำ 'all' ออก
+        selectedCategories.delete('all');
+
+        // สลับสถานะ (ถ้ามีแล้วให้ลบออก ถ้ายังไม่มีให้เพิ่มเข้าไป)
+        if (selectedCategories.has(category)) {
+          selectedCategories.delete(category);
+        } else {
+          selectedCategories.add(category);
+        }
+
+        // ถ้าผู้ใช้ยกเลิกทุกปุ่มจนไม่มีอะไรเลย ให้เด้งกลับไปเลือก 'all'
+        if (selectedCategories.size === 0) {
+          selectedCategories.add('all');
+        }
+      }
+
+      updateCategoryButtonsUI();
+      renderShortcuts();
+    }
+
+    function updateCategoryButtonsUI() {
+      const buttons = document.querySelectorAll('.cat-btn');
+      buttons.forEach(btn => {
+        const cat = btn.getAttribute('data-cat');
+        if (selectedCategories.has(cat)) {
+          // สไตล์สำหรับปุ่มที่ถูกเลือก (Active)
+          btn.className = 'cat-btn bg-slate-800 text-white px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:opacity-90';
+        } else {
+          // สไตล์สำหรับปุ่มที่ไม่ได้เลือก (Inactive)
+          btn.className = 'cat-btn bg-white text-slate-600 border border-slate-200 px-4 py-1.5 rounded-full text-xs font-medium transition shadow-sm hover:bg-slate-50';
+        }
+      });
+    }
 
     function loadShortcuts() {
       try {
@@ -146,7 +214,12 @@
       const grid = document.getElementById('shortcutsGrid');
       const search = document.getElementById('searchInput').value.toLowerCase();
       
-      const filtered = shortcuts.filter(s => s.name.toLowerCase().includes(search));
+      const filtered = shortcuts.filter(s => {
+        const matchesSearch = s.name.toLowerCase().includes(search);
+        // เช็กว่าเลือก 'all' อยู่ หรือไอคอนตรงกับหนึ่งในหมวดหมู่ที่ถูกเลือกไว้หรือไม่
+        const matchesCategory = selectedCategories.has('all') || selectedCategories.has(s.icon);
+        return matchesSearch && matchesCategory;
+      });
 
       if (filtered.length === 0) {
         grid.innerHTML = `
