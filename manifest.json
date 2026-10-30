@@ -1,6 +1,6 @@
 {
   "name": "Intania Shortcut Hub",
-  "short_name": "Intania Hub",
+  "short_name": "My Intania",
   "description": "Shortcut Hub สำหรับนิสิตวิศวะ จุฬาฯ",
   "start_url": "./index.html",
   "display": "standalone",
