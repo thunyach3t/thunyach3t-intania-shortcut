@@ -8,13 +8,13 @@
   "theme_color": "#881337",
   "icons": [
     {
-      "src": "intania_logo.jpg",
+      "src": "apple-touch-icon.png",
       "sizes": "192x192",
       "type": "image/jpeg",
       "purpose": "any maskable"
     },
     {
-      "src": "intania_logo.jpg",
+      "src": "apple-touch-icon.png",
       "sizes": "512x512",
       "type": "image/jpeg",
       "purpose": "any maskable"
